@@ -1,0 +1,12 @@
+Source: nanopi-bluetooth
+Section: admin
+Priority: optional
+Maintainer: Rafal <fatwildcat@gmail.com>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.9.8
+Homepage: https://github.com/rafaello7/nanopi-bluetooth
+
+Package: nanopi-bluetooth
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Enables bluetooth on NanoPi M3 device

@@ -1,0 +1,2 @@
+ap6212hciattach usr/lib/nanopi-bluetooth
+lib/firmware/brcm/bcm43438a0.hcd

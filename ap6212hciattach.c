@@ -46,16 +46,12 @@
 #include "hciattach.h"
 
 struct uart_t {
-	char *type;
-	int  m_id;
-	int  p_id;
 	int  proto;
 	int  init_speed;
 	int  speed;
 	int  flags;
 	int  pm;
 	char *bdaddr;
-	int  (*init) (int fd, const struct uart_t *u, struct termios *ti);
 };
 
 #define FLOW_CTL	0x0001
@@ -136,24 +132,8 @@ int read_hci_event(int fd, unsigned char* buf, int size)
 			return -1;
 		count += r;
 	}
-
 	return count;
 }
-
-static int bcm43xx(int fd, const struct uart_t *u, struct termios *ti)
-{
-	return bcm43xx_init(fd, u->init_speed, u->speed, ti, u->bdaddr);
-}
-
-/*
- * BCSP specific initialization
- */
-static int bcsp_max_retries = 10;
-
-struct uart_t uart_bcm43xx = {
-	"bcm43xx",    0x0000, 0x0000, HCI_UART_H4,   115200, 3000000,
-				FLOW_CTL, DISABLE_PM, NULL, bcm43xx
-};
 
 /* Initialize UART driver */
 static int init_uart(char *dev, const struct uart_t *u, int send_break, int raw)
@@ -207,7 +187,7 @@ static int init_uart(char *dev, const struct uart_t *u, int send_break, int raw)
 		usleep(500000);
 	}
 
-	if (u->init && u->init(fd, u, &ti) < 0)
+	if( bcm43xx_init(fd, u->init_speed, u->speed, &ti, u->bdaddr) < 0 )
 		goto fail;
 
 	tcflush(fd, TCIOFLUSH);
@@ -262,7 +242,11 @@ int main(int argc, char *argv[])
 	struct pollfd p;
 	sigset_t sigs;
 	char dev[PATH_MAX];
+	struct uart_t uart_bcm43xx = {
+		HCI_UART_H4,   115200, 3000000, FLOW_CTL, DISABLE_PM, NULL
+	};
 
+	setlinebuf(stdout);
 	detach = 1;
 	printpid = 0;
 	raw = 0;
@@ -360,7 +344,6 @@ int main(int argc, char *argv[])
 
 	/* 10 seconds should be enough for initialization */
 	alarm(to);
-	bcsp_max_retries = to;
 
 	n = init_uart(dev, &uart_bcm43xx, send_break, raw);
 	if (n < 0) {
@@ -420,7 +403,6 @@ int main(int argc, char *argv[])
 	ld = N_TTY;
 	if (ioctl(n, TIOCSETD, &ld) < 0) {
 		perror("Can't restore line discipline");
-		exit(1);
 	}
 
 	return 0;

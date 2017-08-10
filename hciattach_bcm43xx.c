@@ -36,6 +36,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <ctype.h>
+#include <poll.h>
 #include "hciattach.h"
 
 #define HCI_COMMAND_PKT		0x01
@@ -53,53 +54,33 @@ typedef struct {
 
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
 
-static int bcm43xx_read_local_name(int fd, char *name, size_t size)
-{
-	unsigned char cmd[] = { HCI_COMMAND_PKT, 0x14, 0x0C, 0x00 };
-	unsigned char *resp;
-	unsigned int name_len;
-
-	resp = malloc(size + CC_MIN_SIZE);
-	if (!resp)
-		return -1;
-
-	tcflush(fd, TCIOFLUSH);
-
-	if (write(fd, cmd, sizeof(cmd)) != sizeof(cmd)) {
-		fprintf(stderr, "Failed to write read local name command\n");
-		goto fail;
-	}
-
-	if (read_hci_event(fd, resp, size) < CC_MIN_SIZE) {
-		fprintf(stderr, "Failed to read local name, invalid HCI event\n");
-		goto fail;
-	}
-
-	if (resp[4] != cmd[1] || resp[5] != cmd[2] || resp[6] != CMD_SUCCESS) {
-		fprintf(stderr, "Failed to read local name, command failure\n");
-		goto fail;
-	}
-
-	name_len = resp[2] - 1;
-
-	strncpy(name, (char *) &resp[7], MIN(name_len, size));
-	name[size - 1] = 0;
-
-	free(resp);
-	return 0;
-
-fail:
-	free(resp);
-	return -1;
-}
 
 static int bcm43xx_reset(int fd)
 {
 	unsigned char cmd[] = { HCI_COMMAND_PKT, 0x03, 0x0C, 0x00 };
 	unsigned char resp[CC_MIN_SIZE];
+	struct pollfd pfd;
+	int i, res = 0;
 
-	if (write(fd, cmd, sizeof(cmd)) != sizeof(cmd)) {
-		fprintf(stderr, "Failed to write reset command\n");
+	for(i = 0; i < 3 && res == 0; ++i) {
+		if( i )
+			printf("reset retry\n");
+		if (write(fd, cmd, sizeof(cmd)) != sizeof(cmd)) {
+			fprintf(stderr, "Failed to write reset command\n");
+			return -1;
+		}
+		pfd.fd = fd;
+		pfd.events = POLLIN;
+		pfd.revents = 0;
+
+		res = poll(&pfd, 1, 2000);
+	}
+	if( res < 0 ) {
+		fprintf(stderr, "poll error\n");
+		return -1;
+	}
+	if( res == 0 ) {
+		fprintf(stderr, "reset fail\n");
 		return -1;
 	}
 
@@ -338,17 +319,11 @@ fail:
 int bcm43xx_init(int fd, int def_speed, int speed, struct termios *ti,
 		const char *bdaddr)
 {
-	char chip_name[40];
 	char fw_path[] = "/lib/firmware/brcm/bcm43438a0.hcd";
 
 	printf("bcm43xx_init\n");
-
 	if (bcm43xx_reset(fd))
 		return -1;
-
-	if (bcm43xx_read_local_name(fd, chip_name, sizeof(chip_name)))
-		return -1;
-	printf("chip name: %s\n", chip_name);
 
 	if (bcm43xx_set_speed(fd, ti, speed))
 		return -1;

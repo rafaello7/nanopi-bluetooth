@@ -1,3 +1,9 @@
+nanopi-bluetooth (2) unstable; urgency=low
+
+  * try reset hangup problem workaround: set CRTSCTS "off" and then "on" after 10ms delay
+
+ -- Rafal <fatwildcat@gmail.com>  Fri, 11 Aug 2017 20:45:11 +0200
+
 nanopi-bluetooth (1) unstable; urgency=low
 
   * Initial release

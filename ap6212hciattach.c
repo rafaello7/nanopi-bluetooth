@@ -164,14 +164,21 @@ static int init_uart(char *dev, const struct uart_t *u, int send_break, int raw)
 	cfmakeraw(&ti);
 
 	ti.c_cflag |= CLOCAL;
-	if (u->flags & FLOW_CTL)
-		ti.c_cflag |= CRTSCTS;
-	else
-		ti.c_cflag &= ~CRTSCTS;
-
+	// hangup at reset workaround: turn CRTSCTS off,
+	// then turn turn on after delay
+	ti.c_cflag &= ~CRTSCTS;
 	if (tcsetattr(fd, TCSANOW, &ti) < 0) {
 		perror("Can't set port settings");
 		goto fail;
+	}
+
+	if (u->flags & FLOW_CTL) {
+		usleep(10000);
+		ti.c_cflag |= CRTSCTS;
+		if (tcsetattr(fd, TCSANOW, &ti) < 0) {
+			perror("Can't set port settings");
+			goto fail;
+		}
 	}
 
 	/* Set initial baudrate */

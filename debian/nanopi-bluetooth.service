@@ -3,7 +3,7 @@ Description=enable bluetooth on ap6212
 
 [Service]
 EnvironmentFile=/etc/default/nanopi-bluetooth
-ExecStart=/usr/lib/nanopi-bluetooth/ap6212hciattach -n /dev/ttySAC1 115200 flow bdaddr $BDADDR
+ExecStart=/usr/lib/nanopi-bluetooth/ap6212hciattach -n /dev/ttySAC1 115200 flow $BDADDR
 KillMode=process
 Restart=on-failure
 

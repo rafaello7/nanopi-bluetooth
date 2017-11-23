@@ -1,3 +1,9 @@
+nanopi-bluetooth (3) unstable; urgency=medium
+
+  * Do not set bdaddr by default
+
+ -- Rafal <fatwildcat@gmail.com>  Thu, 23 Nov 2017 09:31:42 +0100
+
 nanopi-bluetooth (2) unstable; urgency=low
 
   * try reset hangup problem workaround: set CRTSCTS "off" and then "on" after 10ms delay

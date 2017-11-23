@@ -1,4 +1,4 @@
 # Defaults for nanopi-bluetooth initscript
 
 # bluetooth device address
-BDADDR="11:22:33:44:55:66"
+#BDADDR="bdaddr 11:22:33:44:55:66"
